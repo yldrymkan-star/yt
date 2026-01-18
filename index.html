@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #0d1117; color: white; min-height: 100vh; display: flex; justify-content: center; align-items: center; margin: 0; }
-        .main-card { background: #161b22; border: 1px solid #30363d; border-radius: 20px; padding: 30px; width: 100%; max-width: 700px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+        .main-card { background: #161b22; border: 1px solid #30363d; border-radius: 20px; padding: 30px; width: 100%; max-width: 700px; }
         .title { font-size: 2rem; font-weight: bold; background: linear-gradient(to bottom, #a5b4fc, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 25px; }
         .tab-btn { background: #0d1117; border: 1px solid #30363d; padding: 10px 15px; border-radius: 10px; cursor: pointer; color: #8b949e; transition: 0.3s; font-size: 0.9rem; flex: 1; }
         .tab-btn.active { background: #5865f2; border-color: #5865f2; color: white; }
@@ -49,10 +49,10 @@
             <input type="text" id="end" placeholder="النهاية (00:30)" class="input-box text-sm">
         </div>
 
-        <button onclick="run()" id="btnAction" class="btn-primary">إنتاج الريل المدمج</button>
+        <button onclick="run()" id="btnAction" class="btn-primary">بدء المعالجة</button>
 
         <div id="status" class="status-area">
-            <p id="msg" class="text-[10px] text-indigo-300 font-bold uppercase tracking-widest"></p>
+            <p id="msg" class="text-[10px] text-indigo-300 font-bold uppercase"></p>
             <div class="progress-bar"><div id="bar" class="progress-inner"></div></div>
         </div>
     </div>
@@ -68,7 +68,6 @@
             document.getElementById('t-'+m).classList.add('active');
             document.getElementById('videoRow').style.display = (m === 'mp3') ? 'none' : 'flex';
             document.getElementById('audioRow').style.display = (m === 'reel') ? 'none' : 'flex';
-            document.getElementById('btnAction').innerText = (m === 'mix') ? 'إنتاج الريل المدمج' : (m === 'mp3' ? 'استخراج الصوت' : 'تحويل ذكي');
         }
 
         function toSec(t) {
@@ -92,6 +91,7 @@
                 
                 bar.style.width = "20%";
                 msg.innerText = "جاري قراءة الملفات...";
+                
                 if (v) ffmpeg.FS('writeFile', 'v.mp4', await fetchFile(v));
                 if (a) ffmpeg.FS('writeFile', 'a.src', await fetchFile(a));
 
@@ -99,11 +99,11 @@
                 const time = (s !== null && e !== null) ? ['-ss', s.toString(), '-t', (e - s).toString()] : [];
 
                 if (mode === 'mix') {
-                    // أمر الدمج: الفيديو من v.mp4 والصوت من a.src (فيديو أو mp3)
-                    cmd = ['-i', 'v.mp4', ...time, '-i', 'a.src', '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-preset', 'ultrafast', '-shortest', out];
+                    // التعديل الجوهري: إضافة '-c:a aac' لضمان تحويل ملف MP3 إلى صيغة متوافقة مع الفيديو
+                    cmd = ['-i', 'v.mp4', ...time, '-i', 'a.src', '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'ultrafast', '-shortest', out];
                 } else if (mode === 'mp3') {
                     out = "audio.mp3";
-                    cmd = [...time, '-i', 'a.src', '-vn', '-ab', '128k', '-ar', '44100', '-y', out];
+                    cmd = [...time, '-i', 'a.src', '-vn', '-acodec', 'libmp3lame', out];
                 } else {
                     cmd = [...time, '-i', 'v.mp4', '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-c:v', 'libx264', '-preset', 'ultrafast', out];
                 }
