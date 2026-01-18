@@ -3,181 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>محرر القصائد الذكي ✨</title>
+    <title>محرر قصائد الذكاء الاصطناعي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #0f172a; color: white; }
-        .card { background: #1e293b; border-radius: 24px; border: 1px solid #334155; }
-        .gradient-indigo { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); }
-        .active-tab { background: #6366f1; color: white; border-color: #6366f1; }
-        input[type="text"], input[type="file"] { background: #0f172a; border: 1px solid #334155; color: white; }
-        .loading-bar { height: 6px; background: #6366f1; width: 0%; transition: width 0.4s ease-in-out; }
+        .card { background: #1e293b; border-radius: 15px; transition: 0.3s; cursor: pointer; }
+        .card:hover { border-color: #6366f1; transform: translateY(-5px); }
+        .gradient-btn { background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); transition: 0.3s; }
+        .input-field { background: #334155; border: 1px solid #475569; border-radius: 10px; padding: 12px; outline: none; width: 100%; text-align: center; }
+        .loading-bar { height: 4px; background: #6366f1; width: 0%; transition: 0.4s; }
     </style>
 </head>
-<body class="p-4 md:p-10 min-h-screen">
+<body class="p-5 md:p-10">
 
     <div class="max-w-4xl mx-auto">
-        <header class="text-center mb-10">
-            <h1 class="text-4xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">✨ أداة صناعة محتوى القصائد</h1>
-            <p class="text-gray-400 text-sm">أداة احترافية للاستقطاع والدمج والتحويل الذكي</p>
-            
-            <div id="statusBox" class="mt-8 hidden max-w-lg mx-auto bg-slate-800 p-4 rounded-2xl border border-slate-700">
-                <div class="w-full bg-slate-900 rounded-full h-2 mb-2">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-2">✨ أداة صناعة محتوى القصائد</h1>
+            <p class="text-gray-400">استقطع، ادمج، وانشر ريلز بضغطة زر</p>
+            <div id="statusBox" class="mt-4 hidden">
+                <div class="w-full bg-slate-800 rounded-full h-1.5 mb-2">
                     <div id="progressBar" class="loading-bar rounded-full"></div>
                 </div>
-                <p id="statusMsg" class="text-xs text-indigo-300 font-bold animate-pulse text-center"></p>
+                <p id="statusMsg" class="text-xs text-indigo-400 animate-pulse"></p>
             </div>
         </header>
 
-        <div class="flex flex-wrap justify-center gap-3 mb-8">
-            <button onclick="switchTab('cut')" id="tab-cut" class="tab-btn active-tab border border-slate-600 px-6 py-3 rounded-xl font-bold transition">🎵 استقطاع MP3</button>
-            <button onclick="switchTab('mix')" id="tab-mix" class="tab-btn border border-slate-600 px-6 py-3 rounded-xl font-bold transition">🎬 دمج ريل جديد</button>
-            <button onclick="switchTab('reel')" id="tab-reel" class="tab-btn border border-slate-600 px-6 py-3 rounded-xl font-bold transition">📱 Smart Reel</button>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <button onclick="showSection('cut')" class="card p-6 border-2 border-transparent focus:border-purple-500">
+                <div class="text-3xl mb-2">🎵</div>
+                <h3 class="font-bold">استقطاع (MP3)</h3>
+            </button>
+            <button onclick="showSection('mix')" class="card p-6 border-2 border-transparent focus:border-blue-500">
+                <div class="text-3xl mb-2">🎬</div>
+                <h3 class="font-bold">دمج مع فيديو جديد</h3>
+            </button>
+            <button onclick="showSection('reel')" class="card p-6 border-2 border-transparent focus:border-green-500">
+                <div class="text-3xl mb-2">📱</div>
+                <h3 class="font-bold">تحويل إلى Reel</h3>
+            </button>
         </div>
 
-        <div class="card p-8 shadow-2xl">
-            
-            <div id="sec-cut" class="space-y-6">
-                <h2 class="text-xl font-bold text-indigo-400 border-r-4 border-indigo-500 pr-3">استخراج صوت القصيدة</h2>
-                <div class="space-y-4">
-                    <label class="block text-sm text-gray-400">ارفع فيديو القصيدة:</label>
-                    <input type="file" id="f-cut" accept="video/*" class="w-full p-2 rounded-lg cursor-pointer">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="s-cut" placeholder="من (مثلاً 01:20)" class="p-4 rounded-xl text-center font-mono outline-none focus:border-indigo-500">
-                        <input type="text" id="e-cut" placeholder="إلى (مثلاً 01:50)" class="p-4 rounded-xl text-center font-mono outline-none focus:border-indigo-500">
-                    </div>
-                    <button onclick="runTask('mp3')" class="gradient-indigo w-full py-4 rounded-2xl font-bold text-lg shadow-lg hover:brightness-110 transition">تحويل وتحميل MP3</button>
+        <div id="cut-section" class="card p-8 shadow-2xl border border-slate-700">
+            <h2 class="text-2xl font-bold mb-6 border-r-4 border-purple-500 pr-3">1. استخراج صوت القصيدة (MP3)</h2>
+            <div class="space-y-4">
+                <input type="file" id="f1" accept="video/*" class="w-full text-sm text-gray-400 file:bg-purple-600 file:text-white file:rounded-lg file:px-4 file:py-2 file:border-0">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="s1" placeholder="البداية (01:20)" class="input-field">
+                    <input type="text" id="e1" placeholder="النهاية (01:50)" class="input-field">
                 </div>
+                <button onclick="execute('mp3')" class="gradient-btn w-full py-4 rounded-xl font-bold text-lg mt-4 shadow-lg">استخراج وتحميل الصوت</button>
             </div>
+        </div>
 
-            <div id="sec-mix" class="hidden space-y-6">
-                <h2 class="text-xl font-bold text-blue-400 border-r-4 border-blue-500 pr-3">دمج الصوت مع فيديو خلفية</h2>
+        <div id="mix-section" class="card p-8 shadow-2xl border border-slate-700 hidden">
+            <h2 class="text-2xl font-bold mb-6 border-r-4 border-blue-500 pr-3">2. دمج صوت القصيدة مع فيديو جديد</h2>
+            <div class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-2">
-                        <label class="text-xs text-gray-400">فيديو القصيدة (للصوت):</label>
-                        <input type="file" id="f-mix-audio" accept="video/*" class="w-full text-xs p-2 rounded-lg">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-xs text-gray-400">فيديو الخلفية (للصورة):</label>
-                        <input type="file" id="f-mix-video" accept="video/*" class="w-full text-xs p-2 rounded-lg">
-                    </div>
+                    <input type="file" id="f2a" accept="video/*" class="text-xs" title="فيديو القصيدة">
+                    <input type="file" id="f2v" accept="video/*" class="text-xs" title="فيديو الخلفية">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="s-mix" placeholder="بداية الصوت (00:10)" class="p-4 rounded-xl text-center font-mono outline-none">
-                    <input type="text" id="e-mix" placeholder="نهاية الصوت (00:40)" class="p-4 rounded-xl text-center font-mono outline-none">
+                    <input type="text" id="s2" placeholder="بداية الصوت (00:10)" class="input-field">
+                    <input type="text" id="e2" placeholder="نهاية الصوت (00:40)" class="input-field">
                 </div>
-                <button onclick="runTask('mix')" class="bg-blue-600 w-full py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 transition shadow-lg">إنتاج الريل المدمج</button>
+                <button onclick="execute('mix')" class="bg-blue-600 w-full py-4 rounded-xl font-bold text-lg mt-4 hover:bg-blue-700 transition">إنتاج ريل مدمج</button>
             </div>
-
-            <div id="sec-reel" class="hidden space-y-6">
-                <h2 class="text-xl font-bold text-green-400 border-r-4 border-green-500 pr-3">Smart Reel (تتبع الكادر)</h2>
-                <div class="space-y-4">
-                    <label class="block text-sm text-gray-400">ارفع الفيديو الأصلي:</label>
-                    <input type="file" id="f-reel" accept="video/*" class="w-full p-2 rounded-lg">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="s-reel" placeholder="من (01:00)" class="p-4 rounded-xl text-center font-mono outline-none">
-                        <input type="text" id="e-reel" placeholder="إلى (01:30)" class="p-4 rounded-xl text-center font-mono outline-none">
-                    </div>
-                    <div class="bg-slate-800 p-4 rounded-xl text-xs text-green-300 italic border border-green-900/30">
-                        💡 ميزة التتبع: سيتم قص الفيديو ليكون طولياً (9:16) مع التركيز تلقائياً على منتصف الكادر.
-                    </div>
-                    <button onclick="runTask('smart')" class="bg-green-600 w-full py-4 rounded-2xl font-bold text-lg hover:bg-green-700 transition shadow-lg">إنتاج ريل احترافي</button>
-                </div>
-            </div>
-
         </div>
+
+        <div id="reel-section" class="card p-8 shadow-2xl border border-slate-700 hidden">
+            <h2 class="text-2xl font-bold mb-6 border-r-4 border-green-500 pr-3">3. تحويل الفيديو إلى Reel (Smart Crop)</h2>
+            <div class="space-y-4">
+                <input type="file" id="f3" accept="video/*" class="w-full">
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="s3" placeholder="من (01:20)" class="input-field">
+                    <input type="text" id="e3" placeholder="إلى (01:50)" class="input-field">
+                </div>
+                <div class="bg-slate-800 p-4 rounded-lg">
+                    <p class="text-sm text-gray-400 italic">سيتم التركيز على وجه المنشد وتحويل الأبعاد إلى 9:16 تلقائياً.</p>
+                </div>
+                <button onclick="execute('smart')" class="bg-green-600 w-full py-4 rounded-xl font-bold text-lg mt-4 hover:bg-green-700 transition">تعديل الأبعاد وتحميل</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
         const { createFFmpeg, fetchFile } = FFmpeg;
         const ffmpeg = createFFmpeg({ log: true });
 
-        // تبديل الأقسام
-        function switchTab(tab) {
-            ['cut', 'mix', 'reel'].forEach(t => {
-                document.getElementById('sec-' + t).classList.add('hidden');
-                document.getElementById('tab-' + t).classList.remove('active-tab');
-            });
-            document.getElementById('sec-' + tab).classList.remove('hidden');
-            document.getElementById('tab-' + tab).classList.add('active-tab');
+        function showSection(section) {
+            document.getElementById('cut-section').classList.add('hidden');
+            document.getElementById('mix-section').classList.add('hidden');
+            document.getElementById('reel-section').classList.add('hidden');
+            document.getElementById(section + '-section').classList.remove('hidden');
         }
 
-        // تحويل الوقت الذكي
-        function toSec(str) {
-            if(!str) return 0;
-            const p = str.trim().replace(/[^0-9:]/g, '').split(':').reverse();
-            let s = 0;
-            if(p[0]) s += parseInt(p[0]);
-            if(p[1]) s += parseInt(p[1]) * 60;
-            if(p[2]) s += parseInt(p[2]) * 3600;
-            return s;
+        function toSeconds(t) {
+            const p = t.trim().split(':').reverse();
+            return p.reduce((acc, v, i) => acc + parseInt(v) * Math.pow(60, i), 0);
         }
 
-        async function runTask(mode) {
+        async function execute(mode) {
             const statusBox = document.getElementById('statusBox');
             const statusMsg = document.getElementById('statusMsg');
             const progressBar = document.getElementById('progressBar');
-            
-            let start, end, f1, f2, out = "output.mp4";
 
             try {
-                if(mode === 'mp3') {
-                    f1 = document.getElementById('f-cut').files[0];
-                    start = toSec(document.getElementById('s-cut').value);
-                    end = toSec(document.getElementById('e-cut').value);
-                    out = "poem_audio.mp3";
-                } else if(mode === 'mix') {
-                    f1 = document.getElementById('f-mix-audio').files[0];
-                    f2 = document.getElementById('f-mix-video').files[0];
-                    start = toSec(document.getElementById('s-mix').value);
-                    end = toSec(document.getElementById('e-mix').value);
-                    out = "mixed_reel.mp4";
-                } else {
-                    f1 = document.getElementById('f-reel').files[0];
-                    start = toSec(document.getElementById('s-reel').value);
-                    end = toSec(document.getElementById('e-reel').value);
-                    out = "smart_reel.mp4";
-                }
-
-                if(!f1 || (end-start) <= 0) { alert("تأكد من الملفات والوقت!"); return; }
-
                 statusBox.classList.remove('hidden');
-                statusMsg.innerText = "جاري تحميل محرك المعالجة...";
-                progressBar.style.width = "20%";
+                if (!ffmpeg.isLoaded()) {
+                    statusMsg.innerText = "جاري تحميل المحرك...";
+                    await ffmpeg.load();
+                }
 
-                if (!ffmpeg.isLoaded()) await ffmpeg.load();
-                
-                statusMsg.innerText = "جاري قراءة الملفات...";
-                progressBar.style.width = "40%";
-                ffmpeg.FS('writeFile', 'in1', await fetchFile(f1));
-                if(f2) ffmpeg.FS('writeFile', 'in2', await fetchFile(f2));
-
-                statusMsg.innerText = "جاري المعالجة (التلويز شغال)...";
-                progressBar.style.width = "70%";
+                let out = "result.mp4", args = [];
+                progressBar.style.width = "30%";
 
                 if(mode === 'mp3') {
-                    await ffmpeg.run('-ss', start.toString(), '-i', 'in1', '-t', (end-start).toString(), '-q:a', '0', '-map', 'a', out);
-                } else if(mode === 'mix') {
-                    await ffmpeg.run('-i', 'in2', '-ss', start.toString(), '-i', 'in1', '-t', (end-start).toString(), 
-                                     '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-shortest', out);
-                } else {
-                    await ffmpeg.run('-ss', start.toString(), '-i', 'in1', '-t', (end-start).toString(), 
-                                     '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-c:v', 'libx264', out);
+                    const f = document.getElementById('f1').files[0];
+                    const s = toSeconds(document.getElementById('s1').value);
+                    const d = toSeconds(document.getElementById('e1').value) - s;
+                    ffmpeg.FS('writeFile', 'i.mp4', await fetchFile(f));
+                    out = "audio.mp3";
+                    args = ['-ss', s.toString(), '-i', 'i.mp4', '-t', d.toString(), '-q:a', '0', '-map', 'a', out];
+                } 
+                else if(mode === 'mix') {
+                    const fa = document.getElementById('f2a').files[0];
+                    const fv = document.getElementById('f2v').files[0];
+                    const s = toSeconds(document.getElementById('s2').value);
+                    const d = toSeconds(document.getElementById('e2').value) - s;
+                    ffmpeg.FS('writeFile', 'audio.mp4', await fetchFile(fa));
+                    ffmpeg.FS('writeFile', 'video.mp4', await fetchFile(fv));
+                    args = ['-i', 'video.mp4', '-ss', s.toString(), '-i', 'audio.mp4', '-t', d.toString(), '-vf', 'crop=ih*(9/16):ih,scale=720:1280', '-map', '0:v', '-map', '1:a', '-shortest', out];
                 }
+                else {
+                    const f = document.getElementById('f3').files[0];
+                    const s = toSeconds(document.getElementById('s3').value);
+                    const d = toSeconds(document.getElementById('e3').value) - s;
+                    ffmpeg.FS('writeFile', 'i.mp4', await fetchFile(f));
+                    // Smart Crop: يركز على منتصف الكادر (المنشد)
+                    args = ['-ss', s.toString(), '-i', 'i.mp4', '-t', d.toString(), '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', out];
+                }
+
+                statusMsg.innerText = "جاري المعالجة... انتظر قليلاً";
+                progressBar.style.width = "60%";
+                await ffmpeg.run(...args);
 
                 progressBar.style.width = "100%";
-                statusMsg.innerText = "اكتملت العملية! جارِ التحميل...";
+                statusMsg.innerText = "اكتمل! جاري التحميل...";
 
                 const data = ffmpeg.FS('readFile', out);
                 const url = URL.createObjectURL(new Blob([data.buffer], { type: mode==='mp3'?'audio/mp3':'video/mp4' }));
-                const a = document.createElement('a');
-                a.href = url; a.download = out; a.click();
+                const a = document.createElement('a'); a.href = url; a.download = out; a.click();
 
             } catch (e) {
+                statusMsg.innerText = "خطأ: تأكد من إعدادات الاستضافة (COOP/COEP)";
                 console.error(e);
-                statusMsg.innerText = "خطأ في المتصفح (تأكد من إعدادات COOP/COEP)";
             }
         }
     </script>
