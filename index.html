@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>محرر القصائد الذكي - النسخة النهائية</title>
+    <title>محرر القصائد الذكي - النسخة القطعية</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
@@ -13,12 +13,13 @@
         .title { font-size: 2rem; font-weight: bold; background: linear-gradient(to bottom, #a5b4fc, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; margin-bottom: 25px; }
         .tab-btn { background: #0d1117; border: 1px solid #30363d; padding: 10px 15px; border-radius: 10px; cursor: pointer; color: #8b949e; transition: 0.3s; font-size: 0.9rem; flex: 1; }
         .tab-btn.active { background: #5865f2; border-color: #5865f2; color: white; }
-        .input-box { background: #0d1117; border: 1px solid #30363d; border-radius: 12px; padding: 12px; color: white; width: 100%; outline: none; text-align: center; }
+        .input-box { background: #0d1117; border: 1px solid #30363d; border-radius: 12px; padding: 12px; color: white; width: 100%; outline: none; text-align: center; font-family: monospace; }
         .file-input-wrapper { background: #0d1117; border: 1px dashed #30363d; padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .btn-primary { width: 100%; background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); padding: 15px; border-radius: 12px; font-weight: bold; border: none; cursor: pointer; margin-top: 15px; }
+        .btn-primary { width: 100%; background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); padding: 15px; border-radius: 12px; font-weight: bold; border: none; cursor: pointer; margin-top: 15px; color: white; font-size: 1.1rem; }
         .status-area { margin-top: 20px; display: none; text-align: center; }
         .progress-bar { background: #30363d; height: 6px; border-radius: 5px; margin-top: 8px; overflow: hidden; }
         .progress-inner { background: #5865f2; height: 100%; width: 0%; transition: 0.3s; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -33,23 +34,23 @@
         </div>
 
         <div id="videoRow" class="file-input-wrapper">
-            <span id="vName" class="text-xs text-gray-500">اختر فيديو الخلفية</span>
-            <label class="bg-indigo-600 px-3 py-1 rounded cursor-pointer text-xs">فيديو التصوير</label>
+            <span id="vName" class="text-xs text-gray-500">اختر فيديو الخلفية (MP4)</span>
+            <label class="bg-indigo-600 px-3 py-1 rounded cursor-pointer text-xs font-bold">فيديو التصوير</label>
             <input type="file" id="vFile" accept="video/*" class="hidden" onchange="document.getElementById('vName').innerText=this.files[0].name">
         </div>
 
         <div id="audioRow" class="file-input-wrapper">
-            <span id="aName" class="text-xs text-gray-500">اختر ملف MP3 أو فيديو القصيدة</span>
-            <label class="bg-purple-600 px-3 py-1 rounded cursor-pointer text-xs">مصدر الصوت</label>
-            <input type="file" id="aFile" accept="video/*,audio/*" class="hidden" onchange="document.getElementById('aName').innerText=this.files[0].name">
+            <span id="aName" class="text-xs text-gray-500">صوت القصيدة (MP3, WAV, Video...)</span>
+            <label class="bg-purple-600 px-3 py-1 rounded cursor-pointer text-xs font-bold">مصدر الصوت</label>
+            <input type="file" id="aFile" accept="audio/*,video/*" class="hidden" onchange="document.getElementById('aName').innerText=this.files[0].name">
         </div>
 
         <div class="grid grid-cols-2 gap-4 mb-4">
-            <input type="text" id="start" placeholder="البداية (00:01)" class="input-box text-sm">
-            <input type="text" id="end" placeholder="النهاية (00:30)" class="input-box text-sm">
+            <input type="text" id="start" placeholder="البداية (00:00)" class="input-box text-sm">
+            <input type="text" id="end" placeholder="النهاية (01:00)" class="input-box text-sm">
         </div>
 
-        <button onclick="run()" id="btnAction" class="btn-primary">بدء المعالجة</button>
+        <button onclick="run()" id="btnAction" class="btn-primary">بدء المعالجة والتحميل</button>
 
         <div id="status" class="status-area">
             <p id="msg" class="text-[10px] text-indigo-300 font-bold uppercase"></p>
@@ -73,7 +74,7 @@
         function toSec(t) {
             if (!t || !t.includes(':')) return null;
             const p = t.split(':').reverse();
-            return p.reduce((a, v, i) => a + parseInt(v) * Math.pow(60, i), 0);
+            return p.reduce((a, v, i) => a + (parseInt(v) || 0) * Math.pow(60, i), 0);
         }
 
         async function run() {
@@ -91,7 +92,6 @@
                 
                 bar.style.width = "20%";
                 msg.innerText = "جاري قراءة الملفات...";
-                
                 if (v) ffmpeg.FS('writeFile', 'v.mp4', await fetchFile(v));
                 if (a) ffmpeg.FS('writeFile', 'a.src', await fetchFile(a));
 
@@ -99,26 +99,34 @@
                 const time = (s !== null && e !== null) ? ['-ss', s.toString(), '-t', (e - s).toString()] : [];
 
                 if (mode === 'mix') {
-                    // التعديل الجوهري: إضافة '-c:a aac' لضمان تحويل ملف MP3 إلى صيغة متوافقة مع الفيديو
-                    cmd = ['-i', 'v.mp4', ...time, '-i', 'a.src', '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-c:a', 'aac', '-preset', 'ultrafast', '-shortest', out];
+                    // أمر "الدمج الشامل": يجبر الصوت على التموضع في قناة AAC موحدة بـ 44.1kHz
+                    cmd = [
+                        '-i', 'v.mp4', 
+                        ...time, '-i', 'a.src', 
+                        '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', 
+                        '-map', '0:v', '-map', '1:a', 
+                        '-c:v', 'libx264', '-preset', 'ultrafast', 
+                        '-c:a', 'aac', '-ar', '44100', '-b:a', '192k', 
+                        '-shortest', '-y', out
+                    ];
                 } else if (mode === 'mp3') {
                     out = "audio.mp3";
-                    cmd = [...time, '-i', 'a.src', '-vn', '-acodec', 'libmp3lame', out];
+                    cmd = [...time, '-i', 'a.src', '-vn', '-acodec', 'libmp3lame', '-ar', '44100', '-q:a', '2', '-y', out];
                 } else {
-                    cmd = [...time, '-i', 'v.mp4', '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-c:v', 'libx264', '-preset', 'ultrafast', out];
+                    cmd = [...time, '-i', 'v.mp4', '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-c:v', 'libx264', '-preset', 'ultrafast', '-y', out];
                 }
 
                 bar.style.width = "50%";
-                msg.innerText = "المعالجة جارية (قد يستغرق وقتاً)...";
+                msg.innerText = "جاري التجهيز والدمج الفني...";
                 await ffmpeg.run(...cmd);
 
                 bar.style.width = "100%";
-                msg.innerText = "اكتمل! جاري التحميل...";
+                msg.innerText = "اكتمل بنجاح! جاري التنزيل...";
                 const data = ffmpeg.FS('readFile', out);
                 const url = URL.createObjectURL(new Blob([data.buffer], { type: out.endsWith('.mp3') ? 'audio/mp3' : 'video/mp4' }));
                 const link = document.createElement('a'); link.href = url; link.download = out; link.click();
             } catch (err) {
-                msg.innerText = "حدث خطأ! تأكد من ملف الإعدادات أو المتصفح.";
+                msg.innerText = "فشل في المعالجة! تأكد من جودة الملف.";
                 console.error(err);
             }
         }
