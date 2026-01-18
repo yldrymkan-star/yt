@@ -3,152 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>محرر القصائد الاحترافي</title>
+    <title>محرر القصائد الذكي</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #0f172a; color: white; min-height: 100vh; }
+        body { font-family: 'Cairo', sans-serif; background-color: #0d1117; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .main-container { width: 100%; max-width: 800px; padding: 20px; text-align: center; }
         
-        /* تصميم البطاقات العلوية */
-        .nav-card { 
-            background: #1e293b; 
-            border: 2px solid #334155; 
-            border-radius: 20px; 
-            transition: 0.3s all ease; 
-            cursor: pointer; 
-        }
-        .nav-card:hover { transform: translateY(-8px); border-color: #6366f1; background: #24334d; }
-        .nav-card.active { border-color: #6366f1; background: #1e1b4b; box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+        /* الترويسة */
+        .title { font-size: 2.5rem; font-weight: bold; background: linear-gradient(to bottom, #a5b4fc, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+        .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 30px; }
 
-        /* الأزرار والحقول الكبيرة */
-        .input-large { 
-            background: #0f172a; 
-            border: 2px solid #334155; 
-            padding: 16px; 
-            border-radius: 15px; 
-            font-size: 1.1rem; 
-            width: 100%; 
-            outline: none; 
-            text-align: center;
-        }
-        .input-large:focus { border-color: #6366f1; box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
+        /* الأزرار العلوية (Tabs) */
+        .tabs-nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 30px; }
+        .tab-btn { background: #161b22; border: 1px solid #30363d; padding: 10px 20px; border-radius: 10px; cursor: pointer; transition: 0.3s; color: white; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        .tab-btn.active { background: #5865f2; border-color: #5865f2; }
+        .tab-btn:hover:not(.active) { border-color: #8b949e; }
 
-        .btn-action { 
-            background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); 
-            padding: 18px; 
-            border-radius: 15px; 
-            font-weight: bold; 
-            font-size: 1.2rem; 
-            transition: 0.3s; 
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-        .btn-action:hover { filter: brightness(1.2); transform: scale(1.01); }
+        /* البطاقة الرئيسية */
+        .action-card { background: #161b22; border: 1px solid #30363d; border-radius: 20px; padding: 40px; text-align: right; position: relative; }
+        .section-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+        .section-title::after { content: ''; width: 4px; height: 20px; background: #5865f2; border-radius: 10px; }
 
-        .section-container { display: none; animation: fadeIn 0.4s ease; }
-        .section-container.active { display: block; }
+        /* حقول الإدخال */
+        .input-row { display: grid; grid-cols: 1; gap: 15px; margin-bottom: 25px; }
+        .time-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .custom-input { background: #0d1117; border: 1px solid #30363d; border-radius: 12px; padding: 15px; color: #8b949e; text-align: center; outline: none; width: 100%; }
+        .custom-input:focus { border-color: #5865f2; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* اختيار الملف */
+        .file-picker-container { display: flex; align-items: center; justify-content: flex-end; gap: 15px; margin-bottom: 25px; color: #8b949e; font-size: 0.85rem; }
+        .file-label { background: #5865f2; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        /* الزر الكبير */
+        .execute-btn { width: 100%; background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); padding: 18px; border-radius: 15px; font-weight: bold; font-size: 1.1rem; color: white; transition: 0.3s; margin-top: 10px; border: none; cursor: pointer; }
+        .execute-btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+        /* شريط التحميل */
+        .status-box { margin-top: 20px; display: none; }
+        .progress-bg { background: #0d1117; height: 6px; border-radius: 10px; width: 100%; margin-top: 10px; overflow: hidden; }
+        .progress-fill { background: #5865f2; height: 100%; width: 0%; transition: 0.3s; }
+
+        .hidden { display: none; }
     </style>
 </head>
-<body class="p-4 md:p-12">
+<body>
 
-    <div class="max-w-5xl mx-auto">
-        <header class="text-center mb-12">
-            <h1 class="text-5xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">✨ صانع محتوى القصائد</h1>
-            <p class="text-gray-400 text-lg">اختر المهمة التي تريد القيام بها لبدء المعالجة</p>
-        </header>
+    <div class="main-container">
+        <div class="title">✨ أداة محرر القصائد الذكي</div>
+        <div class="subtitle">(Smart Crop & Audio Extract) نظام معالجة أوفلاين</div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div onclick="showSection('cut')" id="tab-cut" class="nav-card active p-8 text-center">
-                <div class="text-5xl mb-4">🎵</div>
-                <h3 class="text-xl font-bold">استخراج الصوت</h3>
-                <p class="text-sm text-gray-400 mt-2">تحويل الفيديو إلى MP3 مع القص</p>
-            </div>
-            
-            <div onclick="showSection('mix')" id="tab-mix" class="nav-card p-8 text-center">
-                <div class="text-5xl mb-4">🎬</div>
-                <h3 class="text-xl font-bold">دمج ريل مخصص</h3>
-                <p class="text-sm text-gray-400 mt-2">دمج صوت قصيدة مع فيديو جديد</p>
-            </div>
-
-            <div onclick="showSection('reel')" id="tab-reel" class="nav-card p-8 text-center">
-                <div class="text-5xl mb-4">📱</div>
-                <h3 class="text-xl font-bold">Smart Reel</h3>
-                <p class="text-sm text-gray-400 mt-2">تغيير الأبعاد لتناسب ريلز وتيك توك</p>
-            </div>
+        <div class="tabs-nav">
+            <button onclick="switchTab('reel')" id="tab-reel" class="tab-btn">📱 تحويل ذكي</button>
+            <button onclick="switchTab('mix')" id="tab-mix" class="tab-btn">🎬 دمج ريل</button>
+            <button onclick="switchTab('mp3')" id="tab-mp3" class="tab-btn active">🎵 استقطاع MP3</button>
         </div>
 
-        <div id="statusContainer" class="hidden mb-10 p-6 bg-slate-800/50 border border-indigo-500/30 rounded-2xl">
-            <div class="flex justify-between mb-2">
-                <span id="statusMsg" class="text-indigo-300 font-bold">جاري المعالجة...</span>
-                <span id="percentText" class="text-indigo-400">0%</span>
-            </div>
-            <div class="w-full bg-slate-900 rounded-full h-4 overflow-hidden">
-                <div id="progressBar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-0 transition-all duration-300"></div>
-            </div>
-        </div>
+        <div class="action-card">
+            <div id="section-header" class="section-title">استخراج الصوت فقط</div>
 
-        <div id="cut-section" class="section-container active bg-[#1e293b] p-10 rounded-[30px] border border-slate-700 shadow-2xl">
-            <h2 class="text-2xl font-bold mb-8 flex items-center gap-3">
-                <span class="w-2 h-8 bg-indigo-500 rounded-full"></span> 1. إعدادات استخراج MP3
-            </h2>
-            <div class="space-y-8">
-                <div class="bg-[#0f172a] p-6 rounded-2xl border border-dashed border-slate-600">
-                    <label class="block text-gray-400 mb-3 text-sm">اختر فيديو القصيدة:</label>
-                    <input type="file" id="f1" accept="video/*" class="w-full text-indigo-300">
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label class="block text-gray-400 mb-2 mr-2">وقت البداية (اختياري)</label>
-                        <input type="text" id="s1" placeholder="مثال: 00:05" class="input-large font-mono">
-                    </div>
-                    <div>
-                        <label class="block text-gray-400 mb-2 mr-2">وقت النهاية (اختياري)</label>
-                        <input type="text" id="e1" placeholder="مثال: 01:20" class="input-large font-mono">
-                    </div>
-                </div>
-                <button onclick="process('mp3')" class="btn-action w-full text-white">بدء عملية الاستخراج</button>
+            <div class="file-picker-container">
+                <span id="fileNameDisplay">لم يتم اختيار ملف</span>
+                <label for="mainFileInput" class="file-label">اختيار الملف</label>
+                <input type="file" id="mainFileInput" accept="video/*" class="hidden" onchange="updateFileName()">
             </div>
-        </div>
 
-        <div id="mix-section" class="section-container bg-[#1e293b] p-10 rounded-[30px] border border-slate-700 shadow-2xl">
-            <h2 class="text-2xl font-bold mb-8 flex items-center gap-3">
-                <span class="w-2 h-8 bg-blue-500 rounded-full"></span> 2. دمج الفيديو بالصوت
-            </h2>
-            <div class="space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-[#0f172a] p-5 rounded-2xl border border-slate-700">
-                        <label class="text-xs text-blue-400 block mb-2 font-bold">فيديو المنشد (للصوت):</label>
-                        <input type="file" id="f2a" accept="video/*" class="w-full text-sm">
-                    </div>
-                    <div class="bg-[#0f172a] p-5 rounded-2xl border border-slate-700">
-                        <label class="text-xs text-blue-400 block mb-2 font-bold">فيديو التصوير (للصورة):</label>
-                        <input type="file" id="f2v" accept="video/*" class="w-full text-sm">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-6">
-                    <input type="text" id="s2" placeholder="بداية الصوت" class="input-large">
-                    <input type="text" id="e2" placeholder="نهاية الصوت" class="input-large">
-                </div>
-                <button onclick="process('mix')" class="btn-action w-full bg-gradient-to-r from-blue-600 to-indigo-600">إنتاج الريل المدمج</button>
+            <div class="time-inputs">
+                <input type="text" id="endTime" placeholder="النهاية (01:50)" class="custom-input">
+                <input type="text" id="startTime" placeholder="البداية (01:20)" class="custom-input">
             </div>
-        </div>
 
-        <div id="reel-section" class="section-container bg-[#1e293b] p-10 rounded-[30px] border border-slate-700 shadow-2xl">
-            <h2 class="text-2xl font-bold mb-8 flex items-center gap-3">
-                <span class="w-2 h-8 bg-green-500 rounded-full"></span> 3. تحويل الأبعاد (9:16)
-            </h2>
-            <div class="space-y-8">
-                <input type="file" id="f3" accept="video/*" class="input-large">
-                <div class="grid grid-cols-2 gap-6">
-                    <input type="text" id="s3" placeholder="من وقت" class="input-large">
-                    <input type="text" id="e3" placeholder="إلى وقت" class="input-large">
+            <div id="extraFileRow" class="file-picker-container hidden" style="margin-top: 15px;">
+                <span id="extraFileNameDisplay">لم يتم اختيار فيديو الخلفية</span>
+                <label for="extraFileInput" class="file-label">اختيار الخلفية</label>
+                <input type="file" id="extraFileInput" accept="video/*" class="hidden" onchange="updateExtraFileName()">
+            </div>
+
+            <button onclick="startProcess()" id="mainActionButton" class="execute-btn">بدء استخراج الصوت</button>
+
+            <div id="statusArea" class="status-box">
+                <p id="statusMsg" class="text-xs text-indigo-300"></p>
+                <div class="progress-bg">
+                    <div id="progressBar" class="progress-fill"></div>
                 </div>
-                <div class="bg-green-500/10 p-4 rounded-xl border border-green-500/20 text-green-300 text-center text-sm italic">
-                    سيتم قص الفيديو ليناسب وضع ملء الشاشة في الهاتف بشكل احترافي.
-                </div>
-                <button onclick="process('smart')" class="btn-action w-full bg-gradient-to-r from-green-600 to-teal-600">تحويل وتحميل الآن</button>
             </div>
         </div>
     </div>
@@ -156,94 +94,102 @@
     <script>
         const { createFFmpeg, fetchFile } = FFmpeg;
         const ffmpeg = createFFmpeg({ log: true });
+        let currentMode = 'mp3';
 
-        function toSeconds(t) {
+        // التبديل بين التبويبات
+        function switchTab(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + mode).classList.add('active');
+
+            const header = document.getElementById('section-header');
+            const btn = document.getElementById('mainActionButton');
+            const extra = document.getElementById('extraFileRow');
+
+            if (mode === 'mp3') {
+                header.innerText = "استخراج الصوت فقط";
+                btn.innerText = "بدء استخراج الصوت";
+                extra.classList.add('hidden');
+            } else if (mode === 'mix') {
+                header.innerText = "دمج صوت مع خلفية";
+                btn.innerText = "بدء إنتاج الريل المدمج";
+                extra.classList.remove('hidden');
+            } else {
+                header.innerText = "تحويل الأبعاد لـ Reel";
+                btn.innerText = "بدء التحويل الذكي";
+                extra.classList.add('hidden');
+            }
+        }
+
+        // تحديث أسماء الملفات عند الاختيار
+        function updateFileName() {
+            const file = document.getElementById('mainFileInput').files[0];
+            document.getElementById('fileNameDisplay').innerText = file ? file.name : "لم يتم اختيار ملف";
+        }
+        function updateExtraFileName() {
+            const file = document.getElementById('extraFileInput').files[0];
+            document.getElementById('extraFileNameDisplay').innerText = file ? file.name : "لم يتم اختيار فيديو الخلفية";
+        }
+
+        // دالة الوقت
+        function toSec(t) {
             if (!t || t.trim() === "") return null;
             const p = t.trim().split(':').reverse();
             return p.reduce((acc, v, i) => acc + parseInt(v) * Math.pow(60, i), 0);
         }
 
-        function showSection(id) {
-            // إخفاء الكل وإزالة النشاط
-            document.querySelectorAll('.section-container').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-card').forEach(c => c.classList.remove('active'));
-            
-            // إظهار القسم المختار وتنشيط البطاقة
-            document.getElementById(id + '-section').classList.add('active');
-            document.getElementById('tab-' + id).classList.add('active');
-        }
-
-        async function process(mode) {
-            const statusBox = document.getElementById('statusContainer');
+        // بدء المعالجة
+        async function startProcess() {
+            const file1 = document.getElementById('mainFileInput').files[0];
+            const start = toSec(document.getElementById('startTime').value);
+            const end = toSec(document.getElementById('endTime').value);
+            const statusArea = document.getElementById('statusArea');
             const statusMsg = document.getElementById('statusMsg');
             const progressBar = document.getElementById('progressBar');
-            const percentText = document.getElementById('percentText');
+
+            if (!file1) { alert("يرجى اختيار الملف أولاً!"); return; }
 
             try {
-                let f1, f2, start, end, out;
-                
-                if(mode === 'mp3') {
-                    f1 = document.getElementById('f1').files[0];
-                    start = toSeconds(document.getElementById('s1').value);
-                    end = toSeconds(document.getElementById('e1').value);
-                    out = "voice_poem.mp3";
-                } else if(mode === 'mix') {
-                    f1 = document.getElementById('f2a').files[0];
-                    f2 = document.getElementById('f2v').files[0];
-                    start = toSeconds(document.getElementById('s2').value);
-                    end = toSeconds(document.getElementById('e2').value);
-                    out = "mixed_poem.mp4";
-                } else {
-                    f1 = document.getElementById('f3').files[0];
-                    start = toSeconds(document.getElementById('s3').value);
-                    end = toSeconds(document.getElementById('e3').value);
-                    out = "smart_reel.mp4";
-                }
-
-                if (!f1) { alert("لطفاً اختر الملف أولاً"); return; }
-
-                statusBox.classList.remove('hidden');
-                statusMsg.innerText = "جاري تشغيل المحرك...";
+                statusArea.style.display = 'block';
+                statusMsg.innerText = "جاري تحميل المحرك...";
                 progressBar.style.width = "20%";
-                percentText.innerText = "20%";
 
                 if (!ffmpeg.isLoaded()) await ffmpeg.load();
 
-                statusMsg.innerText = "جاري معالجة البيانات...";
+                statusMsg.innerText = "جاري القراءة...";
                 progressBar.style.width = "40%";
-                percentText.innerText = "40%";
+                ffmpeg.FS('writeFile', 'input1.mp4', await fetchFile(file1));
 
-                ffmpeg.FS('writeFile', 'file1.mp4', await fetchFile(f1));
-                if (f2) ffmpeg.FS('writeFile', 'file2.mp4', await fetchFile(f2));
-
+                let out = "result.mp4", args = [];
                 const timeArgs = (start !== null && end !== null) ? ['-ss', start.toString(), '-t', (end - start).toString()] : [];
 
-                let cmd = [];
-                if (mode === 'mp3') {
-                    cmd = [...timeArgs, '-i', 'file1.mp4', '-q:a', '0', '-map', 'a', out];
-                } else if (mode === 'mix') {
-                    cmd = ['-i', 'file2.mp4', ...timeArgs, '-i', 'file1.mp4', '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-map', '0:v', '-map', '1:a', '-shortest', out];
+                if (currentMode === 'mp3') {
+                    out = "audio.mp3";
+                    args = [...timeArgs, '-i', 'input1.mp4', '-q:a', '0', '-map', 'a', out];
+                } else if (currentMode === 'mix') {
+                    const file2 = document.getElementById('extraFileInput').files[0];
+                    if(!file2) { alert("اختر فيديو الخلفية!"); return; }
+                    ffmpeg.FS('writeFile', 'input2.mp4', await fetchFile(file2));
+                    out = "mixed.mp4";
+                    args = ['-i', 'input2.mp4', ...timeArgs, '-i', 'input1.mp4', '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-map', '0:v', '-map', '1:a', '-shortest', out];
                 } else {
-                    cmd = [...timeArgs, '-i', 'file1.mp4', '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', out];
+                    args = [...timeArgs, '-i', 'input1.mp4', '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', out];
                 }
 
-                statusMsg.innerText = "المعالجة النهائية جارية...";
-                progressBar.style.width = "75%";
-                percentText.innerText = "75%";
-
-                await ffmpeg.run(...cmd);
+                statusMsg.innerText = "جاري المعالجة (انتظر قليلاً)...";
+                progressBar.style.width = "70%";
+                await ffmpeg.run(...args);
 
                 progressBar.style.width = "100%";
-                percentText.innerText = "100%";
-                statusMsg.innerText = "تم بنجاح! جاري التنزيل...";
+                statusMsg.innerText = "تم بنجاح!";
 
                 const data = ffmpeg.FS('readFile', out);
-                const url = URL.createObjectURL(new Blob([data.buffer], { type: mode === 'mp3' ? 'audio/mp3' : 'video/mp4' }));
+                const url = URL.createObjectURL(new Blob([data.buffer], { type: currentMode === 'mp3' ? 'audio/mp3' : 'video/mp4' }));
                 const a = document.createElement('a'); a.href = url; a.download = out; a.click();
 
-            } catch (err) {
-                console.error(err);
+            } catch (e) {
                 statusMsg.innerText = "خطأ في المعالجة!";
+                console.error(e);
             }
         }
     </script>
