@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>محرر القصائد الذكي - التحديث النهائي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #0f172a; color: white; }
+        .card { background: #1e293b; border-radius: 20px; border: 1px solid #334155; }
+        .gradient-btn { background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); transition: 0.3s; }
+        .gradient-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .input-style { background: #0f172a; border: 1px solid #334155; padding: 12px; border-radius: 12px; outline: none; text-align: center; width: 100%; }
+        .input-style:focus { border-color: #6366f1; }
+        .tab-btn { padding: 10px 20px; border-radius: 10px; transition: 0.3s; font-weight: bold; }
+        .active-tab { background: #6366f1; color: white; }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">✨ أداة محرر القصائد الذكي</h1>
+            <p class="text-gray-400">نظام معالجة أوفلاين (Smart Crop & Audio Extract)</p>
+            
+            <div id="statusContainer" class="mt-6 hidden max-w-md mx-auto">
+                <div class="w-full bg-slate-800 rounded-full h-2.5 mb-2">
+                    <div id="progressBar" class="bg-indigo-600 h-2.5 rounded-full transition-all" style="width: 0%"></div>
+                </div>
+                <p id="statusMsg" class="text-xs text-indigo-300 font-bold animate-pulse"></p>
+            </div>
+        </header>
+
+        <div class="flex justify-center gap-4 mb-8">
+            <button onclick="showSection('cut')" id="btn-cut" class="tab-btn active-tab border border-indigo-500">🎵 استقطاع MP3</button>
+            <button onclick="showSection('mix')" id="btn-mix" class="tab-btn border border-slate-600">🎬 دمج ريل</button>
+            <button onclick="showSection('reel')" id="btn-reel" class="tab-btn border border-slate-600">📱 تحويل ذكي</button>
+        </div>
+
+        <div id="cut-section" class="card p-8 shadow-2xl space-y-6">
+            <h2 class="text-xl font-bold border-r-4 border-indigo-500 pr-3">استخراج الصوت فقط</h2>
+            <input type="file" id="audioSource" accept="video/*" class="w-full text-sm text-slate-400 file:bg-indigo-600 file:text-white file:rounded-lg file:px-4 file:py-2 file:border-0">
+            <div class="grid grid-cols-2 gap-4">
+                <input type="text" id="start1" placeholder="البداية (01:20)" class="input-style font-mono">
+                <input type="text" id="end1" placeholder="النهاية (01:50)" class="input-style font-mono">
+            </div>
+            <button onclick="process('mp3')" id="mainBtn1" class="gradient-btn w-full py-4 rounded-xl font-bold text-lg shadow-lg">بدء استخراج الصوت</button>
+        </div>
+
+        <div id="mix-section" class="card p-8 shadow-2xl hidden space-y-6">
+            <h2 class="text-xl font-bold border-r-4 border-blue-500 pr-3">دمج صوت القصيدة مع فيديو جديد</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="text-xs text-gray-400">فيديو القصيدة (للصوت):</label>
+                    <input type="file" id="mixAudioSource" accept="video/*" class="w-full text-xs">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-xs text-gray-400">الفيديو الخلفية (للصورة):</label>
+                    <input type="file" id="mixVideoSource" accept="video/*" class="w-full text-xs">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <input type="text" id="start2" placeholder="بداية الصوت (00:05)" class="input-style font-mono text-sm">
+                <input type="text" id="end2" placeholder="نهاية الصوت (00:30)" class="input-style font-mono text-sm">
+            </div>
+            <button onclick="process('mix')" id="mainBtn2" class="bg-blue-600 w-full py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition shadow-lg">إنتاج الريل المدمج</button>
+        </div>
+
+        <div id="reel-section" class="card p-8 shadow-2xl hidden space-y-6">
+            <h2 class="text-xl font-bold border-r-4 border-green-500 pr-3">Smart Reel (تتبع تلقائي للمنشد)</h2>
+            <input type="file" id="reelSource" accept="video/*" class="w-full">
+            <div class="grid grid-cols-2 gap-4">
+                <input type="text" id="start3" placeholder="من (01:10)" class="input-style font-mono">
+                <input type="text" id="end3" placeholder="إلى (01:40)" class="input-style font-mono">
+            </div>
+            <p class="text-[10px] text-green-400 text-center italic font-bold">ملاحظة: سيقوم النظام بقص الفيديو الأصلي ليكون طولياً (9:16) مع التركيز على وجه المنشد.</p>
+            <button onclick="process('smart')" id="mainBtn3" class="bg-green-600 w-full py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition shadow-lg">تحويل وتحميل الريل</button>
+        </div>
+    </div>
+
+    <script>
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
+
+        // دالة تحويل الوقت القوية
+        function timeToSec(str) {
+            if (!str || typeof str !== 'string') return 0;
+            const cleanStr = str.trim().replace(/[^0-9:]/g, '');
+            const parts = cleanStr.split(':').reverse();
+            let seconds = 0;
+            if (parts[0]) seconds += parseInt(parts[0], 10) || 0;
+            if (parts[1]) seconds += (parseInt(parts[1], 10) || 0) * 60;
+            if (parts[2]) seconds += (parseInt(parts[2], 10) || 0) * 3600;
+            return seconds;
+        }
+
+        function showSection(section) {
+            ['cut', 'mix', 'reel'].forEach(s => {
+                document.getElementById(s + '-section').classList.add('hidden');
+                document.getElementById('btn-' + s).classList.remove('active-tab', 'border-indigo-500');
+            });
+            document.getElementById(section + '-section').classList.remove('hidden');
+            document.getElementById('btn-' + section).classList.add('active-tab', 'border-indigo-500');
+        }
+
+        async function process(mode) {
+            const statusContainer = document.getElementById('statusContainer');
+            const statusMsg = document.getElementById('statusMsg');
+            const progressBar = document.getElementById('progressBar');
+            
+            // جلب المدخلات بناءً على النمط
+            let start, end, file1, file2, outputName;
+            if(mode === 'mp3') {
+                start = timeToSec(document.getElementById('start1').value);
+                end = timeToSec(document.getElementById('end1').value);
+                file1 = document.getElementById('audioSource').files[0];
+                outputName = "audio_poem.mp3";
+            } else if(mode === 'mix') {
+                start = timeToSec(document.getElementById('start2').value);
+                end = timeToSec(document.getElementById('end2').value);
+                file1 = document.getElementById('mixAudioSource').files[0];
+                file2 = document.getElementById('mixVideoSource').files[0];
+                outputName = "mixed_reel.mp4";
+            } else {
+                start = timeToSec(document.getElementById('start3').value);
+                end = timeToSec(document.getElementById('end3').value);
+                file1 = document.getElementById('reelSource').files[0];
+                outputName = "smart_reel.mp4";
+            }
+
+            const duration = end - start;
+            if (!file1 || duration <= 0) { alert("تأكد من اختيار الملفات وكتابة الوقت بشكل صحيح!"); return; }
+
+            try {
+                statusContainer.classList.remove('hidden');
+                statusMsg.innerText = "جاري تحميل محرك المعالجة...";
+                progressBar.style.width = "10%";
+
+                if (!ffmpeg.isLoaded()) await ffmpeg.load();
+                
+                progressBar.style.width = "30%";
+                statusMsg.innerText = "جاري قراءة الملفات... انتظر قليلاً";
+                ffmpeg.FS('writeFile', 'input1.mp4', await fetchFile(file1));
+                if(file2) ffmpeg.FS('writeFile', 'input2.mp4', await fetchFile(file2));
+
+                statusMsg.innerText = "بدء المعالجة والتلويز (قد يستغرق وقتاً حسب حجم الملف)...";
+                progressBar.style.width = "50%";
+
+                if (mode === 'mp3') {
+                    await ffmpeg.run('-ss', start.toString(), '-i', 'input1.mp4', '-t', duration.toString(), '-q:a', '0', '-map', 'a', outputName);
+                } else if (mode === 'mix') {
+                    await ffmpeg.run('-i', 'input2.mp4', '-ss', start.toString(), '-i', 'input1.mp4', '-t', duration.toString(), 
+                                     '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-map', '0:v', '-map', '1:a', '-c:v', 'libx264', '-shortest', outputName);
+                } else if (mode === 'smart') {
+                    await ffmpeg.run('-ss', start.toString(), '-i', 'input1.mp4', '-t', duration.toString(), 
+                                     '-vf', 'crop=ih*(9/16):ih:(iw-ow)/2:0,scale=720:1280', '-c:v', 'libx264', '-preset', 'ultrafast', outputName);
+                }
+
+                progressBar.style.width = "100%";
+                statusMsg.innerText = "تمت العملية بنجاح! جاري التحميل...";
+
+                const data = ffmpeg.FS('readFile', outputName);
+                const url = URL.createObjectURL(new Blob([data.buffer], { type: mode === 'mp3' ? 'audio/mp3' : 'video/mp4' }));
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = outputName;
+                a.click();
+
+            } catch (e) {
+                console.error(e);
+                statusMsg.innerText = "حدث خطأ! تأكد من إعدادات السيرفر (COOP/COEP).";
+            }
+        }
+    </script>
+</body>
+</html>
